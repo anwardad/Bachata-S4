@@ -20,34 +20,19 @@ jobs:
           distribution: 'temurin'
           java-version: '17'
 
-      - name: Install Build Dependencies
-        run: |
-          sudo apt-get update
-          sudo apt-get install -y cmake ninja-build python3
+      - name: Set up Android SDK
+        uses: android-actions/setup-android@v3
 
       - name: Force Android 10 (API 29) Target
         run: |
-          # Find build.gradle files and lower minSdk to 29 if higher
-          find . -name "build.gradle" -o -name "build.gradle.kts" | while read file; do
+          find android/BachataS4 -name "build.gradle" -o -name "build.gradle.kts" | while read file; do
             sed -i 's/minSdk[[:space:]]*=[[:space:]]*[0-9]*/minSdk = 29/g' "$file"
             sed -i 's/minSdkVersion[[:space:]]*[0-9]*/minSdkVersion 29/g' "$file"
           done
 
-      - name: Locate and Execute Gradle Build
+      - name: Build with Gradle
+        working-directory: android/BachataS4
         run: |
-          # Locate gradlew across subdirectories if not in root
-          GRADLE_WRAPPERS=$(find . -name "gradlew" -type f)
-          if [ -z "$GRADLE_WRAPPERS" ]; then
-            echo "Error: gradlew not found in repository. Ensure you are forking the core source repository."
-            exit 1
-          }
-          
-          # Use the first found gradlew wrapper
-          GW_PATH=$(echo "$GRADLE_WRAPPERS" | head -n 1)
-          GW_DIR=$(dirname "$GW_PATH")
-          
-          echo "Found gradlew at: $GW_PATH"
-          cd "$GW_DIR"
           chmod +x ./gradlew
           ./gradlew assembleRelease --no-daemon
 
@@ -55,5 +40,4 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: Bachata-S4-Android10-Build
-          path: '**/build/outputs/apk/release/*.apk'
-          include-hidden-files: true
+          path: android/BachataS4/app/build/outputs/apk/release/*.apk
